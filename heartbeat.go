@@ -23,7 +23,8 @@ func main() {
 	client := redis.NewTCPClient(&options)
 	defer client.Close()
 
-	fmt.Printf("Starting heartbeat on channel \"%s\" every %d seconds\n", appConfig.HeartbeatChannel, appConfig.HeartbeatInterval)
+	fmt.Printf("Starting heartbeat on channel \"%s\" every %d seconds\n",
+		appConfig.HeartbeatChannel, appConfig.HeartbeatInterval)
 
 	for {
 		tick := <-ticker.C
