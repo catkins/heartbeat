@@ -10,39 +10,55 @@ import (
 
 var appConfig config.Configuration
 
-func main() {
+func init() {
 	appConfig = config.Load()
+}
+
+func main() {
+	client := connectToRedis()
+	defer client.Close()
+
+	startInterval(func(tick time.Time) {
+		message := buildMessage(tick)
+		publish(client, message)
+	})
+}
+
+func connectToRedis() *redis.Client {
+	fmt.Printf("Connecting to redis at redis://%s/%d\n",
+		appConfig.RedisAddress,
+		appConfig.RedisDatabase)
+
+	options := appConfig.RedisOptions()
+	return redis.NewTCPClient(&options)
+}
+
+func startInterval(callback func(time.Time)) {
+	fmt.Printf("Starting heartbeat on channel \"%s\" every %d seconds\n",
+		appConfig.HeartbeatChannel,
+		appConfig.HeartbeatInterval)
 
 	interval := time.Duration(appConfig.HeartbeatInterval) * time.Second
 	ticker := time.NewTicker(interval)
 
-	fmt.Printf("Connecting to redis at redis://%s/%d\n",
-		appConfig.RedisAddress, appConfig.RedisDatabase)
-
-	options := appConfig.RedisOptions()
-	client := redis.NewTCPClient(&options)
-	defer client.Close()
-
-	fmt.Printf("Starting heartbeat on channel \"%s\" every %d seconds\n",
-		appConfig.HeartbeatChannel, appConfig.HeartbeatInterval)
-
 	for {
 		tick := <-ticker.C
-
-		go func() {
-			var message string
-			if len(appConfig.HeartbeatMessage) > 0 {
-				message = appConfig.HeartbeatMessage
-			} else {
-				message = fmt.Sprintf("%d", tick.Unix())
-			}
-
-			_, err := client.Publish(appConfig.HeartbeatChannel, message).Result()
-
-			if err != nil {
-				fmt.Println(time.Now().String(), err.Error())
-			}
-		}()
-
+		go callback(tick)
 	}
+}
+
+func publish(client *redis.Client, message string) {
+	_, err := client.Publish(appConfig.HeartbeatChannel, message).Result()
+
+	if err != nil {
+		fmt.Println(time.Now().String(), err.Error())
+	}
+}
+
+func buildMessage(tick time.Time) string {
+	if len(appConfig.HeartbeatMessage) > 0 {
+		return appConfig.HeartbeatMessage
+	}
+
+	return fmt.Sprintf("%d", tick.Unix())
 }
