@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"time"
 
@@ -19,8 +20,12 @@ func main() {
 	defer client.Close()
 
 	startInterval(func(tick time.Time) {
-		message := buildMessage(tick)
-		publish(client, message)
+		message, err := buildMessage(tick)
+		if err == nil {
+			publish(client, message)
+		} else {
+			fmt.Println(time.Now().String(), err.Error())
+		}
 	})
 }
 
@@ -55,10 +60,18 @@ func publish(client *redis.Client, message string) {
 	}
 }
 
-func buildMessage(tick time.Time) string {
-	if len(appConfig.HeartbeatMessage) > 0 {
-		return appConfig.HeartbeatMessage
+func buildMessage(tick time.Time) (string, error) {
+	var context struct {
+		Timestamp string
 	}
 
-	return fmt.Sprintf("%d", tick.Unix())
+	context.Timestamp = fmt.Sprintf("%d", tick.Unix())
+	var buffer bytes.Buffer
+	err := appConfig.HeartbeatTemplate.Execute(&buffer, context)
+
+	if err != nil {
+		return "", err
+	}
+
+	return buffer.String(), nil
 }

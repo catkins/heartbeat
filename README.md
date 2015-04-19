@@ -20,6 +20,17 @@ go run heartbeat.go
 # or build it and you're away
 go build
 ./heartbeat
+
+# add some more info to the heartbeat message with go templates
+HEARTBEAT_MESSAGE="$(hostname) - {{.Timestamp}}" ./heartbeat
+```
+
+### Debugging messages
+
+Start the app, then in another shell watch whats happening in your redis server
+
+```bash
+redis-cli MONITOR
 ```
 
 ### Environment Variables
@@ -35,10 +46,11 @@ This app uses environment variables to override configuration through [godotenv]
 #### App settings
 
 - `HEARTBEAT_CHANNEL` channel to publish heartbeats to (defaults to "heartbeat")
-- `HEARTBEAT_MESSAGE` message to publish as a heartbeats (if blank it sends the current time as a unix timestamp)
+- `HEARTBEAT_MESSAGE` message to publish as a heartbeats as a Go Template (defaults to just sending the current unix timestamp)
 - `HEARTBEAT_INTERVAL` in seconds (defaults to "1")
 
 ### TODO
 
 - [ ] Write tests
 - [ ] Support dynamic messages using Go Templates
+- [ ] Add debug flag

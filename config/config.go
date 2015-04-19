@@ -1,9 +1,11 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/joho/godotenv"
 	"gopkg.in/redis.v2"
@@ -15,6 +17,7 @@ type Configuration struct {
 	RedisPassword     string
 	RedisDatabase     int64
 	HeartbeatMessage  string
+	HeartbeatTemplate *template.Template
 	HeartbeatChannel  string
 	HeartbeatInterval int64
 }
@@ -28,13 +31,13 @@ func Load() Configuration {
 	redisURL := getEnvWithFallback("REDIS_URL", "localhost:6379")
 	// strip out heroku style redis address prefixes
 	redisURL = strings.Replace(redisURL, "redis://", "", 1)
-
+	rawTemplate := getEnvWithFallback("HEARTBEAT_MESSAGE", "{{.Timestamp}}")
 	return Configuration{
 		RedisAddress:      redisURL,
 		RedisPassword:     getEnvWithFallback("REDIS_PASSWORD", ""),
 		RedisDatabase:     getIntEnvWithFallback("REDIS_DATABASE", 0),
 		HeartbeatChannel:  getEnvWithFallback("HEARTBEAT_CHANNEL", "heartbeat"),
-		HeartbeatMessage:  getEnvWithFallback("HEARTBEAT_MESSAGE", ""),
+		HeartbeatTemplate: loadMessageTemplate(rawTemplate),
 		HeartbeatInterval: getIntEnvWithFallback("HEARTBEAT_INTERVAL", 1),
 	}
 }
@@ -71,4 +74,15 @@ func getEnvWithFallback(key string, fallback string) string {
 	}
 
 	return str
+}
+
+func loadMessageTemplate(message string) *template.Template {
+	temp, err := template.New("heartbeat-message").Parse(message)
+
+	if err != nil {
+		fmt.Println("Invalid heartbeat template. Exiting")
+		panic(err)
+	}
+
+	return temp
 }
