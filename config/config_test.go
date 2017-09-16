@@ -55,7 +55,7 @@ func TestDefaultValues(t *testing.T) {
 
 // Ensure the default values can be overriden
 func TestOverriddenValues(t *testing.T) {
-	godotenv.Load("env.test")
+	godotenv.Load(".env.test")
 	c := config.Load()
 	assertEqual(t, "localhost:7000", c.RedisAddress, "Overriden RedisURL mismatch")
 	assertEqual(t, "foo", c.RedisPassword, "Overriden RedisPassword mismatch")
