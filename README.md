@@ -7,7 +7,7 @@ By default every second, heartbeat will send a Redis [PUBLISH](http://redis.io/c
 ### Development
 
 ```bash
-git clone git://github.com/catkins/heartbeat $GOPATH/src/catkins/heartbeat
+git clone git://github.com/catkins/heartbeat $GOPATH/src/github.com/catkins/heartbeat
 cd $GOPATH/src/catkins/heartbeat
 
 # fetch dependencies
